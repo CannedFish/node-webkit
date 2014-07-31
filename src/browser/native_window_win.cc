@@ -306,6 +306,9 @@ NativeWindowWin::NativeWindowWin(const base::WeakPtr<content::Shell>& shell,
 }
 
 NativeWindowWin::~NativeWindowWin() {
+  FOR_EACH_OBSERVER(web_modal::ModalDialogHostObserver,
+                    observer_list_,
+                    OnHostDestroying());
   views::WidgetFocusManager::GetInstance()->RemoveFocusChangeListener(this);
 }
 
@@ -541,6 +544,7 @@ void NativeWindowWin::SetMenu(nwapi::Menu* menu) {
 
   // The menu is lazily built.
   menu->Rebuild();
+  menu->SetWindow(this);
 
   // menu is nwapi::Menu, menu->menu_ is NativeMenuWin,
   ::SetMenu(views::HWNDForWidget(window_), menu->menu_->GetNativeMenu());
@@ -864,4 +868,28 @@ bool NativeWindowWin::ShouldDescendIntoChildForEventHandling(
 
   return true;
 }
+
+gfx::NativeView NativeWindowWin::GetHostView() const {
+  return window_->GetNativeView();
+}
+
+gfx::Size NativeWindowWin::GetMaximumDialogSize() {
+  return window_->GetWindowBoundsInScreen().size();
+}
+
+gfx::Point NativeWindowWin::GetDialogPosition(const gfx::Size& size) {
+  gfx::Size app_window_size = window_->GetWindowBoundsInScreen().size();
+  return gfx::Point(app_window_size.width() / 2 - size.width() / 2,
+                    app_window_size.height() / 2 - size.height() / 2);
+}
+
+void NativeWindowWin::AddObserver(web_modal::ModalDialogHostObserver* observer) {
+  if (observer && !observer_list_.HasObserver(observer))
+    observer_list_.AddObserver(observer);
+}
+
+void NativeWindowWin::RemoveObserver(web_modal::ModalDialogHostObserver* observer) {
+  observer_list_.RemoveObserver(observer);
+}
+
 }  // namespace nw

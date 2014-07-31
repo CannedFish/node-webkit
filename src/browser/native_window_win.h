@@ -40,6 +40,10 @@ namespace views {
 class WebView;
 }
 
+namespace nwapi {
+class Menu;
+}
+
 namespace nw {
 
 class NativeWindowToolbarWin;
@@ -126,6 +130,11 @@ class NativeWindowWin : public NativeWindow,
   virtual bool CanHandleAccelerators() const OVERRIDE{
     return true;
   }
+  virtual gfx::NativeView GetHostView() const OVERRIDE;
+  virtual gfx::Point GetDialogPosition(const gfx::Size& size) OVERRIDE;
+  virtual void AddObserver(web_modal::ModalDialogHostObserver* observer) OVERRIDE;
+  virtual void RemoveObserver(web_modal::ModalDialogHostObserver* observer) OVERRIDE;
+  virtual gfx::Size GetMaximumDialogSize() OVERRIDE;
 
  protected:
   // NativeWindow implementation.
@@ -154,6 +163,8 @@ class NativeWindowWin : public NativeWindow,
         const gfx::Point& location) OVERRIDE;
  private:
   friend class content::Shell;
+  friend class nwapi::Menu;
+
   void OnViewWasResized();
   void InstallEasyResizeTargeterOnContainer();
 
@@ -184,7 +195,7 @@ class NativeWindowWin : public NativeWindow,
 
   bool super_down_;
   bool meta_down_;
-
+  ObserverList<web_modal::ModalDialogHostObserver> observer_list_;
   DISALLOW_COPY_AND_ASSIGN(NativeWindowWin);
 };
 

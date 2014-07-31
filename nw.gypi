@@ -159,6 +159,18 @@
         'src/api/menuitem/menuitem_delegate_mac.mm',
         'src/api/shell/shell.cc',
         'src/api/shell/shell.h',
+        'src/api/shortcut/global_shortcut_listener.cc',
+        'src/api/shortcut/global_shortcut_listener.h',
+        'src/api/shortcut/global_shortcut_listener_mac.h',
+        'src/api/shortcut/global_shortcut_listener_mac.mm',
+        'src/api/shortcut/global_shortcut_listener_x11.cc',
+        'src/api/shortcut/global_shortcut_listener_x11.h',
+        'src/api/shortcut/global_shortcut_listener_win.cc',
+        'src/api/shortcut/global_shortcut_listener_win.h',
+        'src/api/shortcut/shortcut.cc',
+        'src/api/shortcut/shortcut.h',
+        'src/api/shortcut/shortcut_constants.cc',
+        'src/api/shortcut/shortcut_constants.h',
         'src/api/tray/tray.cc',
         'src/api/tray/tray.h',
         'src/api/tray/tray_gtk.cc',
@@ -238,7 +250,7 @@
         'src/browser/shell_javascript_dialog.h',
         'src/browser/shell_login_dialog_gtk.cc',
         'src/browser/shell_login_dialog_mac.mm',
-        #FIXME 'src/browser/shell_login_dialog_win.cc',
+        'src/browser/shell_login_dialog_win.cc',
         'src/browser/shell_login_dialog.cc',
         'src/browser/shell_login_dialog.h',
         'src/browser/shell_resource_dispatcher_host_delegate.cc',
@@ -303,6 +315,14 @@
         'src/renderer/shell_render_process_observer.h',
         'src/nw_shell.cc',
         'src/nw_shell.h',
+        'src/nw_notification_manager.h',
+        'src/nw_notification_manager.cc',
+        'src/nw_notification_manager_win.h',
+        'src/nw_notification_manager_win.cc',		
+        'src/nw_notification_manager_mac.h',
+        'src/nw_notification_manager_mac.mm',
+        'src/nw_notification_manager_linux.h',
+        'src/nw_notification_manager_linux.cc',
         'src/shell_browser_context.cc',
         'src/shell_browser_context.h',
         'src/shell_browser_main.cc',
@@ -352,15 +372,20 @@
         }],
         ['OS=="win"', {
           'sources': [
+            '<(DEPTH)/chrome/browser/ui/views/constrained_window_views.cc',
+            '<(DEPTH)/chrome/browser/ui/views/web_contents_modal_dialog_manager_views.cc',
             'src/browser/autofill_popup_base_view.cc',
             'src/browser/autofill_popup_base_view.h',
             'src/browser/autofill_popup_view_views.cc',
             'src/browser/autofill_popup_view_views.h',
+            'src/browser/login_view.cc',
+            'src/browser/login_view.h',
           ],
           'dependencies': [
             '<(DEPTH)/breakpad/breakpad.gyp:breakpad_handler',
             '<(DEPTH)/breakpad/breakpad.gyp:breakpad_sender',
             '<(DEPTH)/components/components.gyp:breakpad_component',
+            '<(DEPTH)/components/components.gyp:web_modal',
           ],
         }],
         ['os_posix==1 and OS != "mac" and OS != "ios"', {
@@ -378,6 +403,10 @@
         ['OS == "mac"', {
           'sources!': [
             '<(DEPTH)/chrome/common/child_process_logging_posix.cc',
+          ],
+          'sources': [
+            '<(DEPTH)/chrome/browser/ui/cocoa/nsview_additions.h',
+            '<(DEPTH)/chrome/browser/ui/cocoa/nsview_additions.mm',
           ],
           'dependencies': [
             '<(DEPTH)/breakpad/breakpad.gyp:breakpad',
@@ -687,7 +716,7 @@
             {
               'action_name': 'strip_nw_binaries',
               'inputs': [
-#                '<(PRODUCT_DIR)/nwsnapshot',
+                '<(PRODUCT_DIR)/nwsnapshot',
                 '<(PRODUCT_DIR)/chromedriver',
               ],
               'outputs': [
@@ -699,7 +728,7 @@
             },
           ],
           'dependencies': [
-#             '<(DEPTH)/v8/tools/gyp/v8.gyp:nwsnapshot',
+             '<(DEPTH)/v8/tools/gyp/v8.gyp:nwsnapshot',
              '<(DEPTH)/chrome/chrome.gyp:chromedriver',
           ],
         }],
@@ -812,6 +841,11 @@
             '<(DEPTH)/build/linux/system.gyp:gtk',
           ],
         }],  # toolkit_uses_gtk
+        ['OS=="linux"', {
+          'dependencies': [
+            '<(DEPTH)/build/linux/system.gyp:notify',
+          ],
+        }],  # OS=="linux"
         ['OS=="mac"', {
           'product_name': '<(nw_product_name)',
           'dependencies!': [

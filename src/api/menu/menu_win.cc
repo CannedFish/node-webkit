@@ -28,6 +28,9 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_view.h"
 #include "skia/ext/image_operations.h"
+#include "ui/aura/client/screen_position_client.h"
+#include "ui/aura/window.h"
+#include "ui/aura/window_tree_host.h"
 #include "ui/gfx/gdi_util.h"
 #include "ui/gfx/icon_util.h"
 #include "ui/views/controls/menu/menu_2.h"
@@ -88,6 +91,7 @@ void Menu::Create(const base::DictionaryValue& option) {
   menu_.reset(new views::NativeMenuWin(menu_model_.get(), NULL));
 
   focus_manager_ = NULL;
+  window_ = NULL;
 
   std::string type;
   if (option.GetString("type", &type) && type == "menubar")
@@ -114,6 +118,7 @@ void Menu::Append(MenuItem* menu_item) {
 
   is_menu_modified_ = true;
   menu_items_.push_back(menu_item);
+  menu_item->menu_ = this;
 }
 
 void Menu::Insert(MenuItem* menu_item, int pos) {
@@ -128,23 +133,34 @@ void Menu::Insert(MenuItem* menu_item, int pos) {
     menu_model_->InsertSeparatorAt(pos, ui::NORMAL_SEPARATOR);
 
   is_menu_modified_ = true;
+  menu_item->menu_ = this;
+ 
 }
 
 void Menu::Remove(MenuItem* menu_item, int pos) {
   menu_model_->RemoveItemAt(pos);
   is_menu_modified_ = true;
+  menu_item->menu_ = NULL;
 }
 
 void Menu::Popup(int x, int y, content::Shell* shell) {
   Rebuild();
 
   // Map point from document to screen.
-  POINT screen_point = { x, y };
-  ClientToScreen((HWND)shell->web_contents()->GetView()->GetNativeView(),
-                 &screen_point);
+  gfx::Point screen_point(x, y);
 
-  menu_->RunMenuAt(gfx::Point(screen_point.x, screen_point.y),
-                   views::Menu2::ALIGN_TOPLEFT);
+  // Convert from content coordinates to window coordinates.
+  // This code copied from chrome_web_contents_view_delegate_views.cc
+  aura::Window* web_contents_window =
+        shell->web_contents()->GetView()->GetNativeView();
+  aura::Window* root_window = web_contents_window->GetRootWindow();
+  aura::client::ScreenPositionClient* screen_position_client =
+        aura::client::GetScreenPositionClient(root_window);
+  if (screen_position_client) {
+    screen_position_client->ConvertPointToScreen(web_contents_window,
+             &screen_point);
+  }
+  menu_->RunMenuAt(screen_point, views::Menu2::ALIGN_TOPLEFT);
 }
 
 void Menu::Rebuild(const HMENU *parent_menu) {
@@ -205,6 +221,22 @@ void Menu::UpdateKeys(views::FocusManager *focus_manager){
   }
 }
 
+void Menu::UpdateStates() {
+  if (window_)
+    window_->menu_->menu_->UpdateStates();
+}
 
+void Menu::SetWindow(nw::NativeWindowWin* win) {
+  window_ = win;
+  for (int model_index = 0;
+       model_index < menu_model_->GetItemCount();
+       ++model_index) {
+    int command_id = menu_model_->GetCommandIdAt(model_index);
+    MenuItem* item = dispatcher_host()->GetApiObject<MenuItem>(command_id);
+    if (item != NULL && item->submenu_) {
+      item->submenu_->SetWindow(win);
+    }
+  }
+}
 
 }  // namespace nwapi

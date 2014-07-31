@@ -30,6 +30,9 @@
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#if defined(OS_WIN)
+#include "components/web_modal/web_contents_modal_dialog_manager_delegate.h"
+#endif
 #include "ipc/ipc_channel.h"
 
 namespace base {
@@ -61,6 +64,9 @@ using base::FilePath;
 // This represents one window of the Content Shell, i.e. all the UI including
 // buttons and url bar, as well as the web content area.
 class Shell : public WebContentsDelegate,
+#if defined(OS_WIN)
+              public web_modal::WebContentsModalDialogManagerDelegate,
+#endif
               public content::WebContentsObserver,
               public NotificationObserver {
  public:
@@ -124,7 +130,7 @@ class Shell : public WebContentsDelegate,
   static int exit_code() { return exit_code_; }
 
   WebContents* web_contents() const { return web_contents_.get(); }
-  nw::NativeWindow* window() { return window_.get(); }
+  nw::NativeWindow* window() const { return window_.get(); }
 
   void set_force_close(bool force) { force_close_ = force; }
   bool is_devtools() const { return is_devtools_; }
@@ -134,6 +140,11 @@ class Shell : public WebContentsDelegate,
   int id() const { return id_; }
 
   virtual void RenderViewCreated(RenderViewHost* render_view_host) OVERRIDE;
+#if defined(OS_WIN)
+  virtual void SetWebContentsBlocked(content::WebContents* web_contents, bool) OVERRIDE {}
+  virtual bool IsWebContentsVisible(content::WebContents* web_contents);
+  virtual web_modal::WebContentsModalDialogHost* GetWebContentsModalDialogHost() OVERRIDE{ return (web_modal::WebContentsModalDialogHost*)window(); }
+#endif
 
  protected:
   // content::WebContentsObserver implementation.
@@ -154,6 +165,10 @@ class Shell : public WebContentsDelegate,
                                   const base::string16& frame_name,
                                   const GURL& target_url,
                                   WebContents* new_contents) OVERRIDE;
+  virtual void ToggleFullscreenModeForTab(WebContents* web_contents,
+                                          bool enter_fullscreen) OVERRIDE;
+  virtual bool IsFullscreenForTabOrPending(
+      const WebContents* web_contents) const OVERRIDE;
 #if defined(OS_WIN)
   virtual void WebContentsFocused(WebContents* contents) OVERRIDE;
 #endif

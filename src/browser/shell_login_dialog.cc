@@ -2,13 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "content/shell/browser/shell_login_dialog.h"
+#include "content/nw/src/browser/shell_login_dialog.h"
 
 #include "base/bind.h"
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_dispatcher_host.h"
+#include "content/public/browser/resource_request_info.h"
 #include "net/base/auth.h"
 #include "net/url_request/url_request.h"
 #include "ui/gfx/text_elider.h"
@@ -19,7 +20,19 @@ ShellLoginDialog::ShellLoginDialog(
     net::AuthChallengeInfo* auth_info,
     net::URLRequest* request) : auth_info_(auth_info),
                                 request_(request) {
+#if !defined(OS_MACOSX)
+  AddRef();
+#endif
+
+#if defined(OS_WIN)
+  dialog_ = NULL;
+#endif
+
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
+  if (!ResourceRequestInfo::ForRequest(request_)->GetAssociatedRenderFrame(
+          &render_process_id_,  &render_frame_id_)) {
+    NOTREACHED();
+  }
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(&ShellLoginDialog::PrepDialog, this,
@@ -59,15 +72,6 @@ ShellLoginDialog::~ShellLoginDialog() {
   // referenced/dereferenced.
 }
 
-#if !defined(OS_MACOSX) && !defined(TOOLKIT_GTK)
-// Bogus implementations for linking. They are never called because
-// ResourceDispatcherHostDelegate::CreateLoginDelegate returns NULL.
-// TODO: implement ShellLoginDialog for other platforms, drop this #if
-void ShellLoginDialog::PlatformCreateDialog(const base::string16& message) {}
-void ShellLoginDialog::PlatformCleanUp() {}
-void ShellLoginDialog::PlatformRequestCancelled() {}
-#endif
-
 void ShellLoginDialog::PrepDialog(const base::string16& host,
                                   const base::string16& realm) {
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
@@ -102,6 +106,10 @@ void ShellLoginDialog::SendAuthToRequester(bool success,
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
       base::Bind(&ShellLoginDialog::PlatformCleanUp, this));
+}
+
+void ShellLoginDialog::ReleaseSoon() {
+  BrowserThread::ReleaseSoon(BrowserThread::IO, FROM_HERE, this);
 }
 
 }  // namespace content
