@@ -408,13 +408,22 @@ Window.prototype.setShowInTaskbar = function(flag) {
 }
 
 Window.prototype.requestAttention = function(flash) {
-  flash = Boolean(flash);
+  if (typeof flash == 'boolean') {
+    // boolean true is redirected as -1 value
+    flash = flash ? -1 : 0;
+  }
   CallObjectMethod(this, 'RequestAttention', [ flash ]);
 }
 
 Window.prototype.setBadgeLabel = function(label) {
   label = "" + label;
   CallObjectMethod(this, 'SetBadgeLabel', [ label ]);
+}
+
+Window.prototype.setProgressBar = function(progress) {
+  if (typeof progress != "number")
+    throw new String('progress must be a number');
+  CallObjectMethod(this, 'SetProgressBar', [ progress ]);
 }
 
 Window.prototype.setPosition = function(position) {

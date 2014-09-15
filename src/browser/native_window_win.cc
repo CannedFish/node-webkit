@@ -479,8 +479,19 @@ gfx::Point NativeWindowWin::GetPosition() {
   return window_->GetWindowBoundsInScreen().origin();
 }
 
-void NativeWindowWin::FlashFrame(bool flash) {
-  window_->FlashFrame(flash);
+void NativeWindowWin::FlashFrame(int count) {
+  FLASHWINFO fwi;
+  fwi.cbSize = sizeof(fwi);
+  fwi.hwnd = views::HWNDForWidget(window_);
+  if (count != 0) {
+    fwi.dwFlags = FLASHW_ALL;
+    fwi.uCount = count < 0 ? 4 : count;
+    fwi.dwTimeout = 0;
+  }
+  else {
+    fwi.dwFlags = FLASHW_STOP;
+  }
+  FlashWindowEx(&fwi);
 }
 
 HICON createBadgeIcon(const HWND hWnd, const TCHAR *value, const int sizeX, const int sizeY) {
@@ -528,6 +539,37 @@ void NativeWindowWin::SetBadgeLabel(const std::string& badge) {
 
   taskbar->SetOverlayIcon(hWnd, icon, L"Status");
   DestroyIcon(icon);
+}
+
+void NativeWindowWin::SetProgressBar(double progress) {
+  base::win::ScopedComPtr<ITaskbarList3> taskbar;
+  HRESULT result = taskbar.CreateInstance(CLSID_TaskbarList, NULL,
+                                          CLSCTX_INPROC_SERVER);
+  
+  if (FAILED(result)) {
+    VLOG(1) << "Failed creating a TaskbarList3 object: " << result;
+    return;
+  }
+  
+  result = taskbar->HrInit();
+  if (FAILED(result)) {
+    LOG(ERROR) << "Failed initializing an ITaskbarList3 interface.";
+    return;
+  }
+  
+  HWND hWnd = views::HWNDForWidget(window_);
+  
+  TBPFLAG tbpFlag = TBPF_NOPROGRESS;
+  
+  if (progress > 1) {
+    tbpFlag = TBPF_INDETERMINATE;
+  }
+  else if (progress >= 0) {
+    tbpFlag = TBPF_NORMAL;
+    taskbar->SetProgressValue(hWnd, progress * 100, 100);
+  }
+  
+  taskbar->SetProgressState(hWnd, tbpFlag);
 }
 
 void NativeWindowWin::SetKiosk(bool kiosk) {

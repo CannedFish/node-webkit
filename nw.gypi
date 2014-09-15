@@ -63,6 +63,7 @@
       ],
       'include_dirs': [
         '<(DEPTH)',
+        '<(DEPTH)/third_party',
         '<(DEPTH)/third_party/WebKit/Source',
         '<(DEPTH)/third_party/WebKit/public/web',
         '<(DEPTH)/breakpad/src',
@@ -103,6 +104,8 @@
         '<(DEPTH)/chrome/browser/ui/base_window.h',
         '<(DEPTH)/chrome/browser/ui/gtk/gtk_window_util.cc',
         '<(DEPTH)/chrome/browser/ui/gtk/gtk_window_util.h',
+        '<(DEPTH)/chrome/browser/ui/gtk/unity_service.cc',
+        '<(DEPTH)/chrome/browser/ui/gtk/unity_service.h',
         '<(DEPTH)/chrome/browser/ui/views/status_icons/status_icon_win.cc',
         '<(DEPTH)/chrome/browser/ui/views/status_icons/status_icon_win.h',
         '<(DEPTH)/chrome/browser/ui/views/status_icons/status_tray_win.cc',
@@ -141,6 +144,10 @@
         'src/api/dispatcher_bindings_mac.mm',
         'src/api/dispatcher_host.cc',
         'src/api/dispatcher_host.h',
+        'src/api/event/event.h',
+        'src/api/event/event.cc',
+        'src/api/screen/screen.h',
+        'src/api/screen/screen.cc',
         'src/api/window_bindings.cc',
         'src/api/window_bindings.h',
         'src/api/menu/menu.cc',
@@ -364,10 +371,18 @@
             '<(DEPTH)/ui/views/controls/webview/webview.gyp:webview',
           ],
         }],
-        ['(os_posix==1 and OS != "mac" and linux_use_tcmalloc==1)', {
+        ['(os_posix==1 and OS != "mac" and linux_use_tcmalloc==1 and asan==0)', {
           'dependencies': [
             # This is needed by content/app/content_main_runner.cc
             '<(DEPTH)/base/allocator/allocator.gyp:allocator',
+          ],
+        }],
+        ['OS=="win" and target_arch=="ia32"', {
+          'sources': [
+            # TODO(scottmg): This is a workaround for
+            # http://crbug.com/348525 that affects VS2013 before Update 2.
+            # This should be removed once Update 2 is released.
+            '<(DEPTH)/build/win/ftol3.obj',
           ],
         }],
         ['OS=="win"', {
@@ -605,6 +620,7 @@
               '<(SHARED_INTERMEDIATE_DIR)/net/net_resources.pak',
               '<(SHARED_INTERMEDIATE_DIR)/ui/app_locale_settings/app_locale_settings_en-US.pak',
               '<(SHARED_INTERMEDIATE_DIR)/ui/ui_resources/ui_resources_100_percent.pak',
+              '<(SHARED_INTERMEDIATE_DIR)/ui/ui_resources/webui_resources.pak',
               '<(SHARED_INTERMEDIATE_DIR)/ui/ui_strings/ui_strings_en-US.pak',
               '<(SHARED_INTERMEDIATE_DIR)/webkit/devtools_resources.pak',
               '<(SHARED_INTERMEDIATE_DIR)/webkit/blink_resources.pak',

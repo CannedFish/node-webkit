@@ -23,7 +23,9 @@
 #include <gdk/gdk.h>
 
 #include "base/values.h"
+#include "base/environment.h"
 #include "chrome/browser/ui/gtk/gtk_window_util.h"
+#include "chrome/browser/ui/gtk/unity_service.h"
 #include "extensions/common/draggable_region.h"
 #include "content/nw/src/api/menu/menu.h"
 #include "content/nw/src/common/shell_switches.h"
@@ -36,6 +38,15 @@
 #include "ui/gfx/gtk_util.h"
 #include "ui/gfx/rect.h"
 #include "ui/gfx/skia_utils_gtk.h"
+
+namespace ShellIntegrationLinux {
+std::string GetDesktopName(base::Environment* env) {
+  std::string name;
+  if (env->GetVar("NW_DESKTOP", &name) && !name.empty())
+    return name;
+  return "nw.desktop";
+}
+}
 
 namespace nw {
 
@@ -294,12 +305,20 @@ void NativeWindowGtk::SetTitle(const std::string& title) {
   gtk_window_set_title(GTK_WINDOW(window_), title.c_str());
 }
 
-void NativeWindowGtk::FlashFrame(bool flash) {
-  gtk_window_set_urgency_hint(window_, flash);
+void NativeWindowGtk::FlashFrame(int count) {
+  gtk_window_set_urgency_hint(window_, count);
 }
 
 void NativeWindowGtk::SetBadgeLabel(const std::string& badge) {
-  // TODO
+  if (unity::IsRunning()) {
+    unity::SetDownloadCount(atoi(badge.c_str()));
+  }
+}
+
+void NativeWindowGtk::SetProgressBar(double progress) {
+  if (unity::IsRunning()) {
+    unity::SetProgressFraction(progress);
+  }
 }
 
 void NativeWindowGtk::SetKiosk(bool kiosk) {

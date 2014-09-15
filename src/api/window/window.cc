@@ -161,6 +161,8 @@ PopulateCookieObject(const net::CanonicalCookie& canonical_cookie) {
 
 namespace nwapi {
 
+CookieAPIContext::~CookieAPIContext() {}
+
 Window::Window(int id,
                const base::WeakPtr<DispatcherHost>& dispatcher_host,
                const base::DictionaryValue& option)
@@ -254,13 +256,17 @@ void Window::Call(const std::string& method,
         arguments.GetInteger(1, &y))
       shell_->window()->SetPosition(gfx::Point(x, y));
   } else if (method == "RequestAttention") {
-    bool flash;
-    if (arguments.GetBoolean(0, &flash))
-      shell_->window()->FlashFrame(flash);
+    int count;
+    if (arguments.GetInteger(0, &count))
+      shell_->window()->FlashFrame(count);
   } else if (method == "SetBadgeLabel") {
     std::string label;
     if (arguments.GetString(0, &label))
       shell_->window()->SetBadgeLabel(label);
+  } else if (method == "SetProgressBar") {
+    double progress;
+    if (arguments.GetDouble(0, &progress))
+      shell_->window()->SetProgressBar(progress);
   } else if (method == "SetMenu") {
     int id;
     if (arguments.GetInteger(0, &id))
